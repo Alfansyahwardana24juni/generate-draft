@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Draft Dokumen</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Work+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Libraries - Versi yang kompatibel -->
+    <script src="https://unpkg.com/docx@8.4.0/build/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --text-light: #f1f1f1;
+            --text-dark: #2d2d2d;
+            --card-bg: #ffffff;
+            --border: #e0e0e0;
+            --success: #00d9a5;
+            --warning: #ffd93d;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            color: var(--text-dark);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 95%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 3.5rem;
+            color: white;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--highlight);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .draft-type-btn {
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: white;
+            color: var(--text-dark);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .draft-type-btn:hover {
+            border-color: var(--highlight);
+            color: var(--highlight);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .draft-type-btn.active {
+            background: linear-gradient(135deg, var(--highlight), #c23b55);
+            color: white;
+            border-color: var(--highlight);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--highlight);
+            font-family: 'DM Serif Display', serif;
+        }
+
+        .controls {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.875rem 1.25rem;
+            padding-left: 3rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--highlight);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.1);
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+        }
+
+        .btn {
+            padding: 0.875rem 1.75rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Work Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--highlight), #c23b55);
+            color: white;
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(233, 69, 96, 0.4);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 2000px;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            padding: 1rem 1.25rem;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            min-width: 120px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: #f0f4ff;
+        }
+
+        td {
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            vertical-align: top;
+            border-right: 1px solid #f0f0f0;
+            line-height: 1.6;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+
+        .btn-action {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Work Sans', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, #00d9a5, #00b386);
+            color: white;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 217, 165, 0.4);
+        }
+
+        .btn-action:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            max-width: 400px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Generator Draft Dokumen</h1>
+            <p>Buat berbagai jenis draft dokumen dengan mudah dan cepat</p>
+        </div>
+
+        <!-- Pemilihan Jenis Draft -->
+        <div class="controls" style="flex-direction: column; align-items: stretch; margin-bottom: 1.5rem;">
+            <h2 style="margin-bottom: 1rem; color: var(--text-dark);">📄 Pilih Jenis Draft Dokumen</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <button class="draft-type-btn active" data-type="akta-notaris"
+                    onclick="selectDraftType('akta-notaris')">
+                    📋 Akta Notaris Perseroan
+                </button>
+                <button class="draft-type-btn" data-type="surat-perjanjian"
+                    onclick="selectDraftType('surat-perjanjian')">
+                    ✍️ Surat Perjanjian
+                </button>
+                <button class="draft-type-btn" data-type="surat-kuasa" onclick="selectDraftType('surat-kuasa')">
+                    🔏 Surat Kuasa
+                </button>
+                <button class="draft-type-btn" data-type="memo-pribadi" onclick="selectDraftType('memo-pribadi')">
+                    📝 Memo Pribadi
+                </button>
+            </div>
+        </div>
+
+        <!-- Form Input Data -->
+        <div class="controls" style="flex-direction: column; align-items: stretch;">
+            <h2 id="formTitle" style="margin-bottom: 1.5rem; color: var(--text-dark);">📋 Form Data</h2>
+
+            <div id="formContainer">
+                <!-- Form akan dimuat dinamis di sini -->
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem; margin-bottom: 2rem;">
+                <button class="btn btn-primary" onclick="previewDraft()">👁️ Preview Draft</button>
+                <button class="btn btn-primary" style="background: linear-gradient(135deg, #00d9a5, #00b386);"
+                    onclick="downloadDraft()">📥 Download Dokumen</button>
+            </div>
+        </div>
+
+        <!-- Preview Draft -->
+        <div class="table-container" id="previewContainer" style="display: none; max-height: 80vh;">
+            <div class="table-wrapper" style="max-height: 100%;">
+                <div id="previewContent"
+                    style="padding: 2rem; color: var(--text-dark); line-height: 1.8; font-family: 'Courier New', monospace;">
+                    <!-- Preview akan ditampilkan di sini -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Template Akta Notaris
+        const aktaTemplate = `PENDIRIAN PERSEROAN KOMANDITER
+{{nama_legalitas}}
+Nomor : 3
+
+1. Tuan {{nama_direktur}},
+2. Tuan {{nama_komisaris}},
+
+-- Para penghadap saya, Notaris kenal.
+-- Para penghadap menerangkan dengan ini telah setuju dan semufakat
+untuk mendirikan suatu perseroan komanditer dan dijalankan dengan
+peraturan-peraturan dan anggaran dasar sebagai berikut :
+
+------------------------------------ Pasal 1
+Perseroan ini berusaha dengan memakai nama :
+perseroan komanditer {{nama_legalitas}}, Berkedudukan dan berkantor pusat di {{domisili}}, dan jika dipandang perlu, maka di tempat-tempat lain dapat dibuka cabang-cabang atau perwakilan-perwakilannya. Untuk pembukaan cabang-cabang atau perwakilan-perwakilan tersebut diatas Direktur harus mendapat persetujuan dari para pesero lainnya.
+
+------------------------------------ Pasal 2
+-- Maksud dan tujuan perseroan ialah berusaha dalam bidang :
+a. {{jenis_usaha}}
+-- Untuk mencapai maksud dan tujuan tersebut di atas, perseroan dapat
+melaksanakan kegiatan usaha sebagai berikut :
+{{jenis_usaha}}
+
+------------------------------------ Pasal 3
+-- Perseroan ini dimulai sejak ditandatanganinya akta ini dan dilakukan
+untuk jangka waktu yang tidak ditentukan lamanya.
+-- Masing-masing pesero berhak menghentikan keanggotaannya
+sewaktu-waktu asal saja 3 (tiga) bulan sebelumnya memberitahukan
+keinginannya itu secara tertulis kepada pesero lainnya.
+
+------------------------------------ Pasal 4
+-- Modal perseroan ini tidak ditentukan besarnya dan sewaktu-waktu
+dapat dilihat dalam buku-buku perseroan, begitu pula dengan hak dan
+bagian masing-masing persero dalam perseroan.
+-- Para pesero masing-masing dicatat dalam buku perseroan pada
+rekening modal mereka untuk penyetoran-penyetoran uang atau nilai
+pemasukan-pemasukan benda dalam perseroan yang telah dilakukan
+oleh mereka, dan sebagai bukti, maka untuk tiap-tiap penyetoran dan
+pemasukan tersebut akan diberikan suatu tanda penerimaan yang sah
+yang ditandatangani oleh semua pesero.
+-- Penambahan modal kedalam perseroan dan pengambilan bagian
+masing-masing pesero dari modal perseroan haruslah mendapat
+persetujuan dari semua pesero.
+-- Selama perseroan berdiri dan pada waktu perseroan dibubarkan,
+masing-masing pesero mempunyai hak dan menanggung beban-
+beban/hutang-hutang perseroan secara tanggung renteng menurut
+perbandingan jumlah-jumlah yang telah dimasukkan oleh masing-
+masing kedalam perseroan, demikian dengan tidak mengurangi
+ketentuan yang ditetapkan dalam Pasal 9.
+
+-------------------------------------- Pasal 5
+-- Dalam perseroan ini Tuan {{nama_direktur}}, tersebut di atas, masuk menjadi Pesero Pengurus (Pesero Aktif) dan bertanggung jawab sepenuhnya atas usaha-usaha perseroan dan akibatnya, sedangkan Tuan {{nama_direktur}}, tersebut di atas, dalam perseroan ini masuk menjadi Pesero Komanditer (Pesero Diam) menurut Pasal 19 dari Kitab Undang-Undang Hukum Dagang.
+
+-------------------------------------- Pasal 6
+-- Tuan {{nama_direktur}}, tersebut di atas, sebagai Pesero Pengurus dengan jabatan Direktur, sedangkan Tuan {{nama_komisaris}}, tersebut di atas, sebagai Komisaris.
+-- Direktur berhak mewakili perseroan baik di muka maupun di luar
+pengadilan, baik mengenai tindakan pemilikan (daden van eigendom
+en van beschikking) maupun pengurusan (daden van beheer)
+menandatangani atas nama perseroan dan menghubungkan perseroan
+kepada pihak lain dan pihak lain kepada perseroan, akan tetapi dengan
+ketentuan bahwa untuk :
+a. meminjam atau meminjamkan uang atas nama perseroan
+(tidak termasuk mengambil uang perseroan di Bank) ;
+b. menjual/mengalihkan dan melepaskan seluruh atau sebagian besar
+harta kekayaan perseroan ;
+c. menjadikan jaminan hutang seluruh atau sebagian besar harta
+kekayaan perseroan ;
+d. bertindak sebagai penjamin (avalist) ;
+Direktur harus mendapat persetujuan dari Pesero Komanditer.
+-- Selain uang, oleh para pesero dimasukkan pula dalam perseroan,
+yaitu usaha, pekerjaan, tenaga, waktu dan kecakapan, pemasukan mana
+diterima baik oleh perseroan.
+
+------------------------------------- Pasal 7
+-- Pesero Komanditer berhak untuk setiap waktu memeriksa buku-buku
+dan surat-surat perseroan, uang kas dan persediaan barang-barang dari
+perseroan, masuk dalam tempat-tempat dan perusahaan milik perseroan,
+sedangkan Pesero Pengurus berkewajiban membantu keperluan
+Pesero Komanditer dalam melakukan pemeriksaan tersebut.
+
+------------------------------------- Pasal 8
+-- Buku-buku perseroan ditutup pada tiap-tiap akhir tahun.
+-- Pesero Pengurus berkewajiban membuat suatu neraca dan perhitungan
+laba rugi selambat-lambatnya 3 (tiga) bulan setelah tanggal penutupan
+buku-buku perseroan.
+-- Neraca dan perhitungan laba rugi tersebut harus disiapkan di kantor
+atau tempat perseroan selama 30 (tiga puluh) hari untuk diperiksa dan
+disahkan oleh pesero lainnya.
+-- Sebagai bukti bahwa pesero-pesero telah menyetujui dan
+mengesahkan neraca serta perkiraan laba rugi tersebut, pesero-pesero
+harus menandatangani laporan tersebut.
+-- Persetujuan dan pengesahan itu dianggap telah diberikan meski
+pesero lainnya tidak menandatangani neraca dan perkiraan laba rugi
+tersebut, apabila dalam waktu 30 (tiga puluh) hari setelah pembuatan
+laporan neraca dan perkiraan laba rugi tersebut tidak ada pengajuan
+keberatan oleh pesero lainnya.
+-- Dengan adanya pengesahan laporan tersebut, Pesero Pengurus telah
+diberikan pelepasan tanggung jawab (acquit et decharge) tentang
+pengurusan perseroan selama tahun buku yang lewat.
+-- Setiap tahun sekali setelah pengesahan laporan tersebut, maka akan
+diadakan pembagian laba rugi perseroan sesuai dengan ketentuan
+dalam Pasal 9 akta ini.
+
+------------------------------------- Pasal 9
+-- Segala keuntungan atau kerugian pada perseroan dibagi menurut
+perimbangan modal yang telah dimasukkan masing-masing pesero
+dalam perseroan, dengan ketentuan Pesero Komanditer tidak
+menanggung kerugian lebih besar dari jumlah modal yang telah
+disetor dalam perseroan.
+
+------------------------------------- Pasal 10
+-- Untuk keperluan masing-masing pesero, para pesero dapat mengambil
+uang dari keuntungan perseroan yang besarnya akan ditetapkan atas
+dasar persetujuan bersama dengan mengingat keuangan perseroan.
+-- Uang yang telah diambil oleh para pesero akan diperhitungkan dalam
+pembagian keuntungan pada penutupan buku setiap akhir tahun.
+
+------------------------------------- Pasal 11
+-- Apabila salah seorang pesero jatuh pailit atau ditaruh di bawah
+pengampuan, maka pesero itu dianggap telah keluar dari perseroan
+1 (satu) hari sebelum perseroan jatuh pailit atau ditaruh dibawah
+pengampuan.
+-- Dalam hal seorang pesero keluar dari perseroan sebagaimana
+dimaksud dalam Pasal 3 atau dianggap keluar sebagai pesero dari
+perseroan sebagaimana dimaksud di Pasal 11 ayat (1), maka
+pesero-pesero lain tetap berhak atas kekayaan perseroan dan dapat
+meneruskan pekerjaan perseroan dengan memakai nama perseroan
+dengan kewajiban untuk menanggung dan membayar :
+a. Segala hutang perseroan ;
+b. Hak bagian pesero yang keluar tersebut dalam tempo 6 (enam)
+bulan terhitung sejak tanggal pesero tersebut keluar dari perseroan,
+menurut neraca yang dibuat sesuai buku-buku neraca dan
+perhitungan laba rugi perseroan.
+
+------------------------------------- Pasal 12
+-- Jika seorang pesero meninggal dunia, maka perseroan ini diteruskan
+oleh pesero-pesero yang masih ada dengan salah seorang ahli waris
+yang ditunjuk dari pesero yang meninggal dunia tersebut.
+-- Ahli waris pesero yang meninggal dunia tersebut harus menunjuk
+salah seorang dari mereka untuk mewakili dalam perseroan sebagai
+pesero komanditer, dengan kepemilikan sesuai dengan bagian yang
+dimiliki oleh pesero yang meninggal dunia tersebut dalam modal
+perseroan.
+-- Atas persetujuan para pesero, ahli waris pesero yang meninggal dunia
+tersebut dapat diangkat sebagai Pesero Pengurus.
+
+------------------------------------- Pasal 13
+-- Apabila pada suatu ketika perseroan dilikuidasi, maka segala sesuatu
+mengenai likuidasi dilakukan oleh Pesero Pengurus.
+
+------------------------------------- Pasal 14
+-- Hal-hal belum diatur dalam akta ini akan ditetapkan oleh para pesero
+dengan persetujuan bersama.
+
+------------------------------------- Pasal 15
+-- Mengenai segala akibat hukum yang tidak dapat diselesaikan secara
+musyawarah, maka para pihak memilih tempat kedudukan hukum umum
+dan tetap di Kantor Kepaniteraan Pengadilan Negeri Sungguminasa di Kabupaten Gowa.
+
+Akhirnya para penghadap menyatakan dengan ini menjamin
+akan kebenaran identitas para penghadap sesuai tanda pengenal yang
+disampaikan pada saya, Notaris dan bertanggung jawab sepenuhnya
+atas hal tersebut.
+
+Selanjutnya para penghadap juga menyatakan telah mengerti dan
+memahami isi akta ini dan dibuat dalam keadaan sadar, tanpa paksaan
+maupun tekanan dari pihak manapun.
+
+------------------------ DEMIKIANLAH AKTA INI`;
+
+        let allData = [];
+
+        // Fungsi untuk preview akta
+        function previewAkta() {
+            const namaLegalitas = document.getElementById('namaLegalitas').value;
+            const domisili = document.getElementById('domisili').value;
+            const namaDirektor = document.getElementById('namaDirektor').value;
+            const namaKomisaris = document.getElementById('namaKomisaris').value;
+            const jenisUsaha = document.getElementById('jenisUsaha').value;
+
+            if (!namaLegalitas || !domisili || !namaDirektor || !namaKomisaris || !jenisUsaha) {
+                showAlert('❌ Semua field harus diisi!', 'error');
+                return;
+            }
+
+            let preview = aktaTemplate
+                .replace(/{{nama_legalitas}}/g, namaLegalitas)
+                .replace(/{{domisili}}/g, domisili)
+                .replace(/{{nama_direktur}}/g, namaDirektor)
+                .replace(/{{nama_komisaris}}/g, namaKomisaris)
+                .replace(/{{jenis_usaha}}/g, jenisUsaha);
+
+            const previewContainer = document.getElementById('previewContainer');
+            const previewContent = document.getElementById('previewContent');
+
+            // Format preview dengan line breaks
+            previewContent.innerHTML = preview
+                .split('\n')
+                .map(line => `<div>${line || '<br>'}</div>`)
+                .join('');
+
+            previewContainer.style.display = 'block';
+            previewContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Fungsi untuk download akta
+        async function downloadAkta() {
+            const namaLegalitas = document.getElementById('namaLegalitas').value;
+            const domisili = document.getElementById('domisili').value;
+            const namaDirektor = document.getElementById('namaDirektor').value;
+            const namaKomisaris = document.getElementById('namaKomisaris').value;
+            const jenisUsaha = document.getElementById('jenisUsaha').value;
+
+            if (!namaLegalitas || !domisili || !namaDirektor || !namaKomisaris || !jenisUsaha) {
+                showAlert('❌ Semua field harus diisi!', 'error');
+                return;
+            }
+
+            try {
+                if (typeof window.docx === 'undefined' || typeof window.docx.Packer === 'undefined') {
+                    showAlert('❌ Library dokumen belum dimuat. Refresh halaman.', 'error');
+                    return;
+                }
+
+                const { Document, Packer, Paragraph, TextRun } = window.docx;
+
+                let aktaIsi = aktaTemplate
+                    .replace(/{{nama_legalitas}}/g, namaLegalitas)
+                    .replace(/{{domisili}}/g, domisili)
+                    .replace(/{{nama_direktur}}/g, namaDirektor)
+                    .replace(/{{nama_komisaris}}/g, namaKomisaris)
+                    .replace(/{{jenis_usaha}}/g, jenisUsaha);
+
+                const paragraphs = aktaIsi.split('\n').map(line => {
+                    return new Paragraph({
+                        children: [new TextRun({ text: line || ' ' })],
+                        spacing: { line: 360 }
+                    });
+                });
+
+                const doc = new Document({
+                    sections: [{
+                        properties: {},
+                        children: paragraphs
+                    }]
+                });
+
+                const blob = await Packer.toBlob(doc);
+                const filename = `Akta_${namaLegalitas.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.docx`;
+                saveAs(blob, filename);
+
+                showAlert('✅ Dokumen berhasil diunduh!', 'success');
+            } catch (err) {
+                console.error('❌ Error download:', err);
+                showAlert('❌ Gagal membuat dokumen: ' + err.message, 'error');
+            }
+        }
+
+        // Fungsi untuk show alert
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => {
+                alertDiv.style.opacity = '0';
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 4000);
+        }
+
+        // Fungsi untuk show alert
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => {
+                alertDiv.style.opacity = '0';
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 4000);
+        }
+
+        // Initialize
+        window.addEventListener('load', function () {
+            console.log('🔍 Checking libraries...');
+            console.log('docx:', typeof window.docx !== 'undefined' ? '✅' : '❌');
+            console.log('saveAs:', typeof saveAs !== 'undefined' ? '✅' : '❌');
+
+            if (typeof window.docx === 'undefined' || typeof saveAs === 'undefined') {
+                console.error('❌ Libraries belum dimuat lengkap');
+                showAlert('Libraries belum dimuat lengkap. Refresh halaman.', 'error');
+            } else {
+                console.log('✅ All libraries loaded successfully');
+            }
+        });
+    </script>
+</body>
+
+</html>

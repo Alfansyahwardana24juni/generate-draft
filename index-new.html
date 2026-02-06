@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Draft Dokumen</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Work+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/docx@8.4.0/build/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --text-light: #f1f1f1;
+            --text-dark: #2d2d2d;
+            --card-bg: #ffffff;
+            --border: #e0e0e0;
+            --success: #00d9a5;
+            --warning: #ffd93d;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            color: var(--text-dark);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 95%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 3.5rem;
+            color: white;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .controls {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .btn {
+            padding: 0.875rem 1.75rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Work Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--highlight), #c23b55);
+            color: white;
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(233, 69, 96, 0.4);
+        }
+
+        .draft-type-btn {
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: white;
+            color: var(--text-dark);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .draft-type-btn:hover {
+            border-color: var(--highlight);
+            color: var(--highlight);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .draft-type-btn.active {
+            background: linear-gradient(135deg, var(--highlight), #c23b55);
+            color: white;
+            border-color: var(--highlight);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            max-width: 400px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .draft-type-btn {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Generator Draft Dokumen</h1>
+            <p>Buat berbagai jenis draft dokumen dengan mudah dan cepat</p>
+        </div>
+
+        <!-- Pemilihan Jenis Draft -->
+        <div class="controls" style="flex-direction: column; align-items: stretch;">
+            <h2 style="margin-bottom: 1rem; color: var(--text-dark);">📄 Pilih Jenis Draft Dokumen</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <button class="draft-type-btn active" data-type="akta-notaris"
+                    onclick="selectDraftType('akta-notaris')">📋 Akta Notaris</button>
+                <button class="draft-type-btn" data-type="surat-perjanjian"
+                    onclick="selectDraftType('surat-perjanjian')">✍️ Surat Perjanjian</button>
+                <button class="draft-type-btn" data-type="surat-kuasa" onclick="selectDraftType('surat-kuasa')">🔏 Surat
+                    Kuasa</button>
+                <button class="draft-type-btn" data-type="memo-pribadi" onclick="selectDraftType('memo-pribadi')">📝
+                    Memo Pribadi</button>
+            </div>
+        </div>
+
+        <!-- Form Input -->
+        <div class="controls" style="flex-direction: column; align-items: stretch;">
+            <h2 id="formTitle" style="margin-bottom: 1.5rem; color: var(--text-dark);">📋 Form Data</h2>
+            <div id="formContainer"></div>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn btn-primary" onclick="previewDraft()">👁️ Preview Draft</button>
+                <button class="btn btn-primary" style="background: linear-gradient(135deg, #00d9a5, #00b386);"
+                    onclick="downloadDraft()">📥 Download Dokumen</button>
+            </div>
+        </div>
+
+        <!-- Preview Draft -->
+        <div class="table-container" id="previewContainer" style="display: none;">
+            <div class="table-wrapper">
+                <div id="previewContent"
+                    style="color: var(--text-dark); line-height: 1.8; font-family: 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const draftTypes = {
+            'akta-notaris': {
+                title: '📋 Form Data Akta Notaris Perseroan Komanditer',
+                fields: [
+                    { id: 'namaLegalitas', label: 'Nama Legalitas Perseroan', placeholder: 'Contoh: PT Maju Jaya', type: 'text', required: true },
+                    { id: 'domisili', label: 'Domisili', placeholder: 'Contoh: Jakarta Pusat', type: 'text', required: true },
+                    { id: 'namaDirektor', label: 'Nama Direktur', placeholder: 'Contoh: Budi Santoso', type: 'text', required: true },
+                    { id: 'namaKomisaris', label: 'Nama Komisaris', placeholder: 'Contoh: Siti Nurhaliza', type: 'text', required: true },
+                    { id: 'jenisUsaha', label: 'Jenis Usaha', placeholder: 'Contoh: Perdagangan Umum', type: 'textarea', required: true }
+                ]
+            },
+            'surat-perjanjian': {
+                title: '✍️ Form Data Surat Perjanjian',
+                fields: [
+                    { id: 'pihakPertama', label: 'Pihak Pertama (Nama & Alamat)', placeholder: 'Contoh: PT ABC Jl. Merdeka No.1', type: 'textarea', required: true },
+                    { id: 'pihakKedua', label: 'Pihak Kedua (Nama & Alamat)', placeholder: 'Contoh: PT XYZ Jl. Sudirman No.2', type: 'textarea', required: true },
+                    { id: 'tujuanPerjanjian', label: 'Tujuan Perjanjian', placeholder: 'Contoh: Kerjasama Bisnis', type: 'textarea', required: true },
+                    { id: 'durasi', label: 'Durasi Perjanjian', placeholder: 'Contoh: 2 Tahun', type: 'text', required: true }
+                ]
+            },
+            'surat-kuasa': {
+                title: '🔏 Form Data Surat Kuasa',
+                fields: [
+                    { id: 'namaPemberi', label: 'Nama Pemberi Kuasa', placeholder: 'Contoh: Budi Santoso', type: 'text', required: true },
+                    { id: 'alamatPemberi', label: 'Alamat Pemberi Kuasa', placeholder: 'Contoh: Jl. Merdeka No.1', type: 'textarea', required: true },
+                    { id: 'namaPenerima', label: 'Nama Penerima Kuasa', placeholder: 'Contoh: Siti Nurhaliza', type: 'text', required: true },
+                    { id: 'lingkupKuasa', label: 'Lingkup Kuasa', placeholder: 'Contoh: Mewakili dalam transaksi jual beli tanah', type: 'textarea', required: true }
+                ]
+            },
+            'memo-pribadi': {
+                title: '📝 Form Data Memo Pribadi',
+                fields: [
+                    { id: 'judulMemo', label: 'Judul Memo', placeholder: 'Contoh: Rencana Perjalanan Dinas', type: 'text', required: true },
+                    { id: 'tujuanMemo', label: 'Tujuan', placeholder: 'Contoh: Koordinasi dengan supplier', type: 'textarea', required: true },
+                    { id: 'isiMemo', label: 'Isi Memo', placeholder: 'Contoh: Detil kegiatan yang akan dilakukan', type: 'textarea', required: true },
+                    { id: 'tanggalMemo', label: 'Tanggal', placeholder: 'Contoh: 15 Februari 2026', type: 'text', required: true }
+                ]
+            }
+        };
+
+        const draftTemplates = {
+            'akta-notaris': `PENDIRIAN PERSEROAN KOMANDITER
+{{namaLegalitas}}
+Nomor : 3
+
+1. Tuan {{namaDirektor}},
+2. Tuan {{namaKomisaris}},
+
+-- Para penghadap saya, Notaris kenal.
+-- Para penghadap menerangkan dengan ini telah setuju dan semufakat untuk mendirikan suatu perseroan komanditer dan dijalankan dengan peraturan-peraturan dan anggaran dasar sebagai berikut :
+
+PASAL 1
+Perseroan ini berusaha dengan memakai nama :
+perseroan komanditer {{namaLegalitas}}, Berkedudukan dan berkantor pusat di {{domisili}}.
+
+PASAL 2
+Maksud dan tujuan perseroan ialah berusaha dalam bidang :
+{{jenisUsaha}}
+
+PASAL 3
+Perseroan ini dimulai sejak ditandatanganinya akta ini dan dilakukan untuk jangka waktu yang tidak ditentukan lamanya.
+
+PASAL 4
+Modal perseroan ini tidak ditentukan besarnya dan sewaktu-waktu dapat dilihat dalam buku-buku perseroan.
+
+PASAL 5
+Dalam perseroan ini Tuan {{namaDirektor}} masuk menjadi Pesero Pengurus (Pesero Aktif) dan bertanggung jawab sepenuhnya atas usaha-usaha perseroan dan akibatnya. Sedangkan Tuan {{namaKomisaris}} masuk menjadi Pesero Komanditer (Pesero Diam).
+
+PASAL 6
+Tuan {{namaDirektor}} sebagai Pesero Pengurus dengan jabatan Direktur.
+Tuan {{namaKomisaris}} sebagai Komisaris.
+
+Direktur berhak mewakili perseroan baik di muka maupun di luar pengadilan, baik mengenai tindakan pemilikan maupun pengurusan menandatangani atas nama perseroan.
+
+PASAL 7
+Pesero Komanditer berhak untuk setiap waktu memeriksa buku-buku dan surat-surat perseroan, uang kas dan persediaan barang-barang dari perseroan.
+
+PASAL 8
+Buku-buku perseroan ditutup pada tiap-tiap akhir tahun. Pesero Pengurus berkewajiban membuat suatu neraca dan perhitungan laba rugi selambat-lambatnya 3 (tiga) bulan setelah tanggal penutupan buku-buku perseroan.
+
+PASAL 9
+Segala keuntungan atau kerugian pada perseroan dibagi menurut perimbangan modal yang telah dimasukkan masing-masing pesero dalam perseroan.
+
+PASAL 10
+Untuk keperluan masing-masing pesero, para pesero dapat mengambil uang dari keuntungan perseroan yang besarnya akan ditetapkan atas dasar persetujuan bersama.
+
+DEMIKIANLAH AKTA INI`,
+            'surat-perjanjian': `SURAT PERJANJIAN KERJASAMA
+
+Yang bertanda tangan dibawah ini:
+
+PIHAK PERTAMA:
+{{pihakPertama}}
+
+PIHAK KEDUA:
+{{pihakKedua}}
+
+Telah sepakat dan setuju untuk mengadakan perjanjian dengan ketentuan sebagai berikut:
+
+PASAL 1 - TUJUAN PERJANJIAN
+Dengan adanya perjanjian ini, kedua belah pihak berjanji untuk saling bekerja sama dalam hal:
+{{tujuanPerjanjian}}
+
+PASAL 2 - JANGKA WAKTU
+Perjanjian ini berlaku untuk jangka waktu {{durasi}}, terhitung sejak ditandatanganinya perjanjian ini.
+
+PASAL 3 - KEWAJIBAN
+Kedua belah pihak sepakat untuk melaksanakan kewajiban dan hak masing-masing sesuai dengan perjanjian ini dengan sebaik-baiknya.
+
+PASAL 4 - PERUBAHAN PERJANJIAN
+Segala perubahan atau tambahan dalam perjanjian ini harus dilakukan secara tertulis dan ditandatangani oleh kedua belah pihak.
+
+Demikian perjanjian ini dibuat dengan penuh kesadaran dan tanpa tekanan dari siapapun.
+
+Jakarta, [Tanggal Pembuatan]
+
+[Tanda Tangan Pihak Pertama]     [Tanda Tangan Pihak Kedua]`,
+            'surat-kuasa': `SURAT KUASA
+
+Yang bertanda tangan dibawah ini:
+
+PEMBERI KUASA:
+Nama: {{namaPemberi}}
+Alamat: {{alamatPemberi}}
+
+Dengan ini memberikan kuasa kepada:
+
+PENERIMA KUASA:
+Nama: {{namaPenerima}}
+
+Untuk dan atas nama Pemberi Kuasa melakukan tindakan-tindakan hukum dalam hal:
+{{lingkupKuasa}}
+
+PASAL 1
+Kuasa ini diberikan tanpa membatasi kewenangan Pemberi Kuasa lainnya untuk menyelenggarakan hal-hal lain yang belum dicakup dalam kuasa ini.
+
+PASAL 2
+Penerima Kuasa berhak melakukan segala sesuatu yang dianggap perlu untuk melaksanakan kuasa ini dengan baik.
+
+PASAL 3
+Kuasa ini berlaku sampai dicabutnya kuasa ini oleh Pemberi Kuasa atau karena kematian Pemberi Kuasa.
+
+Demikian surat kuasa ini dibuat untuk dipergunakan seperlunya.
+
+Jakarta, [Tanggal Pembuatan]
+
+[Tanda Tangan Pemberi Kuasa]
+{{namaPemberi}}`,
+            'memo-pribadi': `MEMO PRIBADI
+
+Tanggal: {{tanggalMemo}}
+
+JUDUL: {{judulMemo}}
+
+═════════════════════════════════════════════════════════════
+
+TUJUAN MEMO:
+{{tujuanMemo}}
+
+─────────────────────────────────────────────────────────────
+
+ISI MEMO:
+{{isiMemo}}
+
+─────────────────────────────────────────────────────────────
+
+Catatan Penting:
+• Memo pribadi ini untuk penggunaan internal saja
+• Informasi yang termuat bersifat rahasia
+
+═════════════════════════════════════════════════════════════
+
+Dibuat oleh: Pembuat Memo
+Tanggal Pembuatan: {{tanggalMemo}}`
+        };
+
+        let currentDraftType = 'akta-notaris';
+
+        function selectDraftType(type) {
+            currentDraftType = type;
+            document.querySelectorAll('.draft-type-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+            loadFormFields();
+            document.getElementById('previewContainer').style.display = 'none';
+        }
+
+        function loadFormFields() {
+            const config = draftTypes[currentDraftType];
+            const formContainer = document.getElementById('formContainer');
+            const formTitle = document.getElementById('formTitle');
+            formTitle.textContent = config.title;
+
+            let formHTML = `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">`;
+
+            config.fields.forEach(field => {
+                const inputStyle = `style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-family: 'Work Sans', sans-serif; font-size: 0.95rem;"`;
+                const required = field.required ? ' *' : '';
+
+                if (field.type === 'textarea') {
+                    formHTML += `
+                        <div style="grid-column: 1 / -1;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-dark);">${field.label}${required}</label>
+                            <textarea id="${field.id}" placeholder="${field.placeholder}" ${inputStyle} style="resize: vertical; min-height: 100px;"></textarea>
+                        </div>`;
+                } else {
+                    formHTML += `
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-dark);">${field.label}${required}</label>
+                            <input type="${field.type}" id="${field.id}" placeholder="${field.placeholder}" ${inputStyle}>
+                        </div>`;
+                }
+            });
+
+            formHTML += `</div>`;
+            formContainer.innerHTML = formHTML;
+        }
+
+        function previewDraft() {
+            const config = draftTypes[currentDraftType];
+            const template = draftTemplates[currentDraftType];
+
+            let data = {};
+            let allFilled = true;
+
+            config.fields.forEach(field => {
+                const value = document.getElementById(field.id).value;
+                if (field.required && !value) {
+                    allFilled = false;
+                }
+                data[field.id] = value;
+            });
+
+            if (!allFilled) {
+                showAlert('❌ Semua field harus diisi!', 'error');
+                return;
+            }
+
+            let preview = template;
+            Object.keys(data).forEach(key => {
+                preview = preview.replace(new RegExp(`{{${key}}}`, 'g'), data[key]);
+            });
+
+            const previewContent = document.getElementById('previewContent');
+            previewContent.textContent = preview;
+            document.getElementById('previewContainer').style.display = 'block';
+            document.getElementById('previewContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function downloadDraft() {
+            const config = draftTypes[currentDraftType];
+            const template = draftTemplates[currentDraftType];
+
+            let data = {};
+            let allFilled = true;
+
+            config.fields.forEach(field => {
+                const value = document.getElementById(field.id).value;
+                if (field.required && !value) {
+                    allFilled = false;
+                }
+                data[field.id] = value;
+            });
+
+            if (!allFilled) {
+                showAlert('❌ Semua field harus diisi!', 'error');
+                return;
+            }
+
+            try {
+                if (typeof window.docx === 'undefined' || typeof window.docx.Packer === 'undefined') {
+                    showAlert('❌ Library dokumen belum dimuat. Refresh halaman.', 'error');
+                    return;
+                }
+
+                const { Document, Packer, Paragraph, TextRun } = window.docx;
+
+                let content = template;
+                Object.keys(data).forEach(key => {
+                    content = content.replace(new RegExp(`{{${key}}}`, 'g'), data[key]);
+                });
+
+                const paragraphs = content.split('\n').map(line => {
+                    return new Paragraph({
+                        children: [new TextRun({ text: line || ' ' })],
+                        spacing: { line: 360 }
+                    });
+                });
+
+                const doc = new Document({
+                    sections: [{
+                        properties: {},
+                        children: paragraphs
+                    }]
+                });
+
+                const blob = await Packer.toBlob(doc);
+                const filename = `Draft_${currentDraftType}_${Date.now()}.docx`;
+                saveAs(blob, filename);
+
+                showAlert('✅ Dokumen berhasil diunduh!', 'success');
+            } catch (err) {
+                console.error('❌ Error:', err);
+                showAlert('❌ Gagal membuat dokumen: ' + err.message, 'error');
+            }
+        }
+
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => {
+                alertDiv.style.opacity = '0';
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 4000);
+        }
+
+        window.addEventListener('load', function () {
+            console.log('✅ Loading draft generator...');
+            loadFormFields();
+
+            if (typeof window.docx === 'undefined' || typeof saveAs === 'undefined') {
+                console.error('❌ Libraries not loaded');
+                showAlert('⚠️ Library tidak lengkap. Silakan refresh halaman.', 'error');
+            }
+        });
+    </script>
+</body>
+
+</html>

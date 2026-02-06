@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Draft Dokumen Perseroan Komanditer</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Work+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- jsPDF untuk PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- FileSaver untuk download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --text-light: #f1f1f1;
+            --text-dark: #2d2d2d;
+            --card-bg: #ffffff;
+            --border: #e0e0e0;
+            --success: #00d9a5;
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            color: var(--text-dark);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 95%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: white;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--highlight);
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.1);
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .data-count {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .btn-refresh {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--highlight) 0%, #d63651 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+        }
+
+        .btn-refresh:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(233, 69, 96, 0.4);
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        thead th {
+            padding: 1.25rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background-color 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        tbody td {
+            padding: 1rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-download {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--success) 0%, #00b386 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 217, 165, 0.4);
+        }
+
+        .btn-download.pdf {
+            background: linear-gradient(135deg, #e94560 0%, #d63651 100%);
+        }
+
+        .btn-download.pdf:hover {
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.4);
+        }
+
+        .alert {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            animation: slideInRight 0.3s ease;
+            max-width: 400px;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, var(--success) 0%, #00b386 100%);
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, #e94560 0%, #d63651 100%);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+            }
+
+            .info-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            thead th,
+            tbody td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Generator Draft Dokumen</h1>
+            <p>Perseroan Komanditer - Otomatis dari Google Sheets</p>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Cari berdasarkan nama, domisili, jenis usaha...">
+            </div>
+            <div class="info-bar">
+                <div class="data-count">
+                    <span id="dataCount">Loading...</span>
+                </div>
+                <button class="btn-refresh" onclick="loadData()">🔄 Refresh Data</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Timestamp</th>
+                            <th>Nama Legalitas</th>
+                            <th>Domisili</th>
+                            <th>Jenis Usaha</th>
+                            <th>Direktur</th>
+                            <th>Komisaris</th>
+                            <th>Nama</th>
+                            <th>Sapaan</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="10" class="loading">
+                                <div class="spinner"></div>
+                                Memuat data dari Google Sheets...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load docx library from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.min.js"></script>
+
+    <script>
+        // URL Google Sheets yang sudah dipublish sebagai CSV
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ZyFtOfuvn4wOJ06gw1nZgb93DJCLC4X7JdCWdGWjUss/export?format=csv&gid=0';
+
+        let allData = [];
+
+        // Load data dari Google Sheets
+        async function loadData() {
+            try {
+                showAlert('⏳ Memuat data...', 'success');
+
+                const response = await fetch(SHEET_URL);
+                const csvText = await response.text();
+
+                allData = parseCSV(csvText);
+                displayData(allData);
+
+                document.getElementById('dataCount').textContent = `${allData.length} data ditemukan`;
+                showAlert('✅ Data berhasil dimuat!', 'success');
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showAlert('❌ Gagal memuat data: ' + error.message, 'error');
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:#e94560;">Gagal memuat data. Silakan refresh halaman.</td></tr>';
+            }
+        }
+
+        // Parse CSV
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            const result = [];
+            const headers = parseCSVLine(lines[0]);
+
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim()) {
+                    const values = parseCSVLine(lines[i]);
+                    const row = {};
+
+                    headers.forEach((header, index) => {
+                        row[header.trim()] = values[index] ? values[index].trim() : '';
+                    });
+
+                    if (row['nama_legalitas'] && row['nama_legalitas'].trim()) {
+                        result.push(row);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const nextChar = line[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+
+            result.push(current);
+            return result;
+        }
+
+        // Display data di tabel
+        function displayData(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;">Tidak ada data</td></tr>';
+                return;
+            }
+
+            data.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${index + 1}</strong></td>
+                    <td>${row['timestamp'] || '-'}</td>
+                    <td><strong>${row['nama_legalitas'] || '-'}</strong></td>
+                    <td>${row['domisili'] || '-'}</td>
+                    <td>${row['jenis_usaha'] || '-'}</td>
+                    <td>${row['nama_direktur'] || row['nama-nama_direktur'] || '-'}</td>
+                    <td>${row['nama_komisaris'] || row['nama-nama_komisaris'] || '-'}</td>
+                    <td>${row['nama'] || '-'}</td>
+                    <td>${row['sapaan'] || '-'}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn-download" onclick="generateDOCX(${index})">
+                                📄 DOCX
+                            </button>
+                            <button class="btn-download pdf" onclick="generatePDF(${index})">
+                                📕 PDF
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = allData.filter(row => {
+                return Object.values(row).some(value =>
+                    String(value).toLowerCase().includes(searchTerm)
+                );
+            });
+            displayData(filtered);
+            document.getElementById('dataCount').textContent = `${filtered.length} data ditemukan`;
+        });
+
+        // Generate DOCX menggunakan library docx
+        async function generateDOCX(rowIndex) {
+            try {
+                const rowData = allData[rowIndex];
+                if (!rowData) {
+                    showAlert('❌ Data tidak ditemukan!', 'error');
+                    return;
+                }
+
+                const namaDirektor = rowData['nama_direktur'] || rowData['nama-nama_direktur'] || '';
+                const namaKomisaris = rowData['nama_komisaris'] || rowData['nama-nama_komisaris'] || '';
+                const namaLegalitas = rowData['nama_legalitas'] || '';
+                const domisili = rowData['domisili'] || '';
+                const jenisUsaha = rowData['jenis_usaha'] || '';
+
+                if (!namaDirektor || !namaKomisaris || !namaLegalitas || !domisili || !jenisUsaha) {
+                    showAlert('❌ Data tidak lengkap!', 'error');
+                    return;
+                }
+
+                showAlert('⏳ Membuat dokumen DOCX...', 'success');
+
+                // Pastikan library sudah loaded
+                if (typeof docx === 'undefined') {
+                    showAlert('❌ Library DOCX belum siap. Silakan refresh halaman.', 'error');
+                    return;
+                }
+
+                const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
+
+                // Helper functions
+                const createJustifiedParagraph = (text, indent = false) => {
+                    return new Paragraph({
+                        alignment: AlignmentType.JUSTIFIED,
+                        indent: indent ? { firstLine: 720 } : undefined,
+                        children: [
+                            new TextRun({
+                                text: text,
+                                font: 'Times New Roman',
+                                size: 24
+                            })
+                        ],
+                        spacing: { line: 360 }
+                    });
+                };
+
+                const createCenteredParagraph = (text, bold = false, color = '000000') => {
+                    return new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [
+                            new TextRun({
+                                text: text,
+                                font: 'Times New Roman',
+                                size: 22,
+                                bold: bold,
+                                color: color
+                            })
+                        ],
+                        spacing: { before: 120, after: 120 }
+                    });
+                };
+
+                const createPasalHeader = (text) => {
+                    return new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [
+                            new TextRun({
+                                text: text,
+                                font: 'Times New Roman',
+                                size: 22,
+                                bold: true,
+                                color: 'D00000'
+                            })
+                        ],
+                        spacing: { before: 120, after: 120 }
+                    });
+                };
+
+                // Build document
+                const doc = new Document({
+                    sections: [{
+                        properties: {
+                            page: {
+                                margin: {
+                                    top: 1440,
+                                    right: 1440,
+                                    bottom: 1440,
+                                    left: 1440
+                                }
+                            }
+                        },
+                        children: [
+                            // Title
+                            createCenteredParagraph('PENDIRIAN PERSEROAN KOMANDITER', true),
+                            createCenteredParagraph(namaLegalitas.toUpperCase(), true, 'D00000'),
+                            createCenteredParagraph('Nomor :', true, 'D00000'),
+
+                            new Paragraph({ children: [new TextRun({ text: '', size: 24 })], spacing: { before: 240 } }),
+
+                            // Names
+                            new Paragraph({
+                                children: [
+                                    new TextRun({ text: '1.  Tuan ', font: 'Times New Roman', size: 24 }),
+                                    new TextRun({ text: namaDirektor + ',', font: 'Times New Roman', size: 24, bold: true, color: 'D00000' })
+                                ]
+                            }),
+                            new Paragraph({
+                                children: [
+                                    new TextRun({ text: '2.  Tuan ', font: 'Times New Roman', size: 24 }),
+                                    new TextRun({ text: namaKomisaris + ',', font: 'Times New Roman', size: 24, bold: true, color: 'D00000' })
+                                ],
+                                spacing: { after: 120 }
+                            }),
+
+                            // Opening
+                            createJustifiedParagraph('--Para penghadap saya, Notaris kenal.', true),
+                            createJustifiedParagraph('--Para penghadap menerangkan dengan ini telah setuju dan semufakat untuk mendirikan suatu perseroan komanditer dan dijalankan dengan peraturan-peraturan dan anggaran dasar sebagai berikut :', true),
+
+                            // Pasal 1
+                            createPasalHeader('------------------------------------ Pasal 1'),
+                            createJustifiedParagraph('Perseroan ini berusaha dengan memakai nama :'),
+                            createJustifiedParagraph(`perseroan komanditer ${namaLegalitas}, Berkedudukan dan berkantor pusat di ${domisili}, dan jika dipandang perlu, maka di tempat-tempat lain dapat dibuka cabang-cabang atau perwakilan-perwakilannya. Untuk pembukaan cabang-cabang atau perwakilan-perwakilan tersebut diatas Direktur harus mendapat persetujuan dari para pesero lainnya.`),
+
+                            // Pasal 2
+                            createPasalHeader('------------------------------------ Pasal 2'),
+                            createJustifiedParagraph('--Maksud dan tujuan perseroan ialah berusaha dalam bidang :', true),
+                            createJustifiedParagraph(jenisUsaha),
+                            createJustifiedParagraph('--Untuk mencapai maksud dan tujuan tersebut di atas, perseroan dapat melaksanakan kegiatan usaha sebagai berikut :', true),
+                            createJustifiedParagraph(jenisUsaha),
+
+                            // Continue with all other Pasals...
+                            createPasalHeader('------------------------------------ Pasal 3'),
+                            createJustifiedParagraph('--Perseroan ini dimulai sejak ditandatanganinya akta ini dan dilakukan untuk jangka waktu yang tidak ditentukan lamanya.', true),
+                            createJustifiedParagraph('--Masing-masing pesero berhak menghentikan keanggotaannya sewaktu-waktu asal saja 3 (tiga) bulan sebelumnya memberitahukan keinginannya itu secara tertulis kepada pesero lainnya.', true),
+
+                            // Closing
+                            new Paragraph({ children: [new TextRun({ text: '', size: 24 })], spacing: { before: 480 } }),
+                            createCenteredParagraph('------------------------ DEMIKIANLAH AKTA INI', true, 'D00000')
+                        ]
+                    }]
+                });
+
+                // Generate and download
+                const blob = await Packer.toBlob(doc);
+                const filename = `Draft_${cleanFilename(namaLegalitas)}_${Date.now()}.docx`;
+                saveAs(blob, filename);
+
+                showAlert('✅ Dokumen DOCX berhasil diunduh!', 'success');
+
+            } catch (err) {
+                console.error('❌ Error:', err);
+                showAlert('❌ Gagal membuat DOCX: ' + err.message, 'error');
+            }
+        }
+
+        // Generate PDF dengan format yang tepat
+        async function generatePDF(rowIndex) {
+            try {
+                const rowData = allData[rowIndex];
+                if (!rowData) {
+                    showAlert('❌ Data tidak ditemukan!', 'error');
+                    return;
+                }
+
+                const namaDirektor = rowData['nama_direktur'] || rowData['nama-nama_direktur'] || '';
+                const namaKomisaris = rowData['nama_komisaris'] || rowData['nama-nama_komisaris'] || '';
+                const namaLegalitas = rowData['nama_legalitas'] || '';
+                const domisili = rowData['domisili'] || '';
+                const jenisUsaha = rowData['jenis_usaha'] || '';
+
+                if (!namaDirektor || !namaKomisaris || !namaLegalitas || !domisili || !jenisUsaha) {
+                    showAlert('❌ Data tidak lengkap!', 'error');
+                    return;
+                }
+
+                showAlert('⏳ Membuat dokumen PDF...', 'success');
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Settings sesuai template yang diberikan
+                const leftMargin = 25;
+                const rightMargin = 25;
+                const topMargin = 25;
+                const pageWidth = 210;
+                const pageHeight = 297;
+                const maxWidth = pageWidth - leftMargin - rightMargin;
+                let y = topMargin;
+                const lineHeight = 5;
+
+                // Helper untuk justified text
+                function addJustifiedText(text, yPos, isIndented = false) {
+                    const indent = isIndented ? 10 : 0;
+                    const actualMaxWidth = maxWidth - indent;
+                    const xPos = leftMargin + indent;
+
+                    const lines = doc.splitTextToSize(text, actualMaxWidth);
+
+                    for (let i = 0; i < lines.length; i++) {
+                        if (yPos > pageHeight - 25) {
+                            doc.addPage();
+                            yPos = topMargin;
+                        }
+
+                        const line = lines[i].trim();
+
+                        // Justify all lines except last
+                        if (i < lines.length - 1 && line.length > 0) {
+                            const words = line.split(/\s+/);
+                            if (words.length > 1) {
+                                const lineWidth = doc.getTextWidth(line);
+                                const spaceWidth = actualMaxWidth - lineWidth;
+                                const gapWidth = spaceWidth / (words.length - 1);
+
+                                let xOffset = xPos;
+                                for (let j = 0; j < words.length; j++) {
+                                    doc.text(words[j], xOffset, yPos);
+                                    if (j < words.length - 1) {
+                                        xOffset += doc.getTextWidth(words[j]) + doc.getTextWidth(' ') + gapWidth;
+                                    }
+                                }
+                            } else {
+                                doc.text(line, xPos, yPos);
+                            }
+                        } else {
+                            doc.text(line, xPos, yPos);
+                        }
+
+                        yPos += lineHeight;
+                    }
+
+                    return yPos;
+                }
+
+                // Title section
+                doc.setFont('times', 'bold');
+                doc.setFontSize(12);
+                doc.text('PENDIRIAN PERSEROAN KOMANDITER', pageWidth / 2, y, { align: 'center' });
+                y += lineHeight + 1;
+
+                // Company name in red
+                doc.setTextColor(208, 0, 0);
+                doc.text(namaLegalitas.toUpperCase(), pageWidth / 2, y, { align: 'center' });
+                y += lineHeight + 1;
+
+                doc.text('Nomor :', pageWidth / 2, y, { align: 'center' });
+                y += lineHeight + 15;
+
+                // Reset to black, normal font
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('times', 'normal');
+                doc.setFontSize(11);
+
+                // Names with red bold for actual names
+                doc.text('1.  Tuan ', leftMargin, y);
+                doc.setFont('times', 'bold');
+                doc.setTextColor(208, 0, 0);
+                const w1 = doc.getTextWidth('1.  Tuan ');
+                doc.text(namaDirektor + ',', leftMargin + w1, y);
+                y += lineHeight;
+
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('times', 'normal');
+                doc.text('2.  Tuan ', leftMargin, y);
+                doc.setFont('times', 'bold');
+                doc.setTextColor(208, 0, 0);
+                const w2 = doc.getTextWidth('2.  Tuan ');
+                doc.text(namaKomisaris + ',', leftMargin + w2, y);
+                y += lineHeight + 2;
+
+                // Reset
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('times', 'normal');
+
+                // Content
+                y = addJustifiedText('--Para penghadap saya, Notaris kenal.', y, true);
+                y = addJustifiedText('--Para penghadap menerangkan dengan ini telah setuju dan semufakat untuk mendirikan suatu perseroan komanditer dan dijalankan dengan peraturan-peraturan dan anggaran dasar sebagai berikut :', y, true);
+                y += 2;
+
+                // Pasal 1
+                doc.setFont('times', 'bold');
+                doc.setTextColor(208, 0, 0);
+                doc.text('------------------------------------ Pasal 1', leftMargin, y);
+                y += lineHeight + 2;
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('times', 'normal');
+
+                y = addJustifiedText('Perseroan ini berusaha dengan memakai nama :', y);
+                y = addJustifiedText(`perseroan komanditer ${namaLegalitas}, Berkedudukan dan berkantor pusat di ${domisili}, dan jika dipandang perlu, maka di tempat-tempat lain dapat dibuka cabang-cabang atau perwakilan-perwakilannya. Untuk pembukaan cabang-cabang atau perwakilan-perwakilan tersebut diatas Direktur harus mendapat persetujuan dari para pesero lainnya.`, y);
+                y += 3;
+
+                // Continue dengan Pasal lainnya dengan format yang sama...
+
+                // Final
+                y += 10;
+                doc.setFont('times', 'bold');
+                doc.setTextColor(208, 0, 0);
+                doc.text('------------------------ DEMIKIANLAH AKTA INI', pageWidth / 2, y, { align: 'center' });
+
+                // Save
+                const filename = `Draft_${cleanFilename(namaLegalitas)}_${Date.now()}.pdf`;
+                doc.save(filename);
+
+                showAlert('✅ Dokumen PDF berhasil diunduh!', 'success');
+
+            } catch (err) {
+                console.error('❌ Error:', err);
+                showAlert('❌ Gagal membuat PDF: ' + err.message, 'error');
+            }
+        }
+
+        // Utility functions
+        function cleanFilename(text) {
+            return String(text).replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+        }
+
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.style.opacity = '0';
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 4000);
+        }
+
+        // Load data on page load
+        window.addEventListener('load', function () {
+            // Tunggu sedikit agar library ter-load
+            setTimeout(loadData, 500);
+        });
+    </script>
+</body>
+
+</html>
